@@ -27,20 +27,23 @@ fn get_value(operand: &Vec<usize>, index: usize, permutation: &Vec<usize>) -> us
     return permutation[operand[index]];
 }
 
-fn check_equality(operands: &Vec<Vec<usize>>, sum: &Vec<usize>, permutation: &Vec<usize>, index: usize, carry: usize) -> bool {
-    if index >= sum.len() {
-        return true;
+fn check_equality(operands: &Vec<Vec<usize>>, sum: &Vec<usize>, permutation: &Vec<usize>) -> bool {
+    let mut carry = 0;
+
+    for index in 0..sum.len() {
+        let digits: Vec<usize> = operands.iter().map(|o| get_value(&o, index, permutation)).collect();
+
+        let column_sum: usize = digits.iter().sum();
+        let result = column_sum + carry;
+
+        if result % 10 != permutation[sum[index]] {
+            return false;
+        }
+
+        carry = result / 10;
     }
 
-    let digits: Vec<usize> = operands.iter().map(|o| get_value(&o, index, permutation)).collect();
-
-    let column_sum: usize = digits.iter().sum();
-    let result = column_sum + carry;
-
-    if result % 10 == permutation[sum[index]] {
-        return check_equality(&operands, &sum, &permutation, index + 1, result / 10);
-    }
-    return false;
+    return true;
 }
 
 fn main() {
@@ -60,7 +63,7 @@ fn main() {
     let rev_sum = to_indices(sum, &indices);
 
     for permutation in heap {
-        if check_equality(&rev_operands, &rev_sum, &permutation, 0, 0) {
+        if check_equality(&rev_operands, &rev_sum, &permutation) {
             for operand in &operands {
                 println!("{:10}", to_numeric(operand, &indices, &permutation));
             }
