@@ -1,0 +1,11 @@
+[package]
+name = "text-puzzle"
+version = "0.1.0"
+authors = ["Craig Barber <craigb@mojotech.com>"]
+edition = "2018"
+
+[dependencies]
+permutohedron = "0.2.4"
+
+[profile.release]
+debug = false
