@@ -1,44 +1,71 @@
 use permutohedron::Heap;
 
-const INDICES: &str = "teyhnigrw";
-
-fn to_indices(text: &str) -> Vec<usize> {
-    return text.split("").filter(|&s| s != "").map(|s| INDICES.find(s).unwrap() as usize).collect::<Vec<usize>>();
+fn to_indices(text: &str, indices: &String) -> Vec<usize> {
+    return text
+        .chars()
+        .rev()
+        .map(|s| indices.find(s).unwrap() as usize)
+        .collect::<Vec<usize>>();
 }
 
-fn to_numeric(indices: &Vec<usize>, permutation: &Vec<u8>) -> u32 {
-    let text: String = indices.iter().map(|&i| permutation[i].to_string()).collect::<Vec<String>>().concat();
-    return text.parse::<u32>().unwrap();
+fn to_numeric(text: &str, indices: &String, permutation: &Vec<usize>) -> u32 {
+    let result = text
+        .chars()
+        .rev()
+        .map(|s| indices.find(s).unwrap() as usize)
+        .map(|i| permutation[i].to_string())
+        .collect::<Vec<String>>()
+        .concat();
+    return result.parse::<u32>().unwrap();
 }
 
-fn has_short_circuit_inequality(permutation: &Vec<u8>, eight: &Vec<usize>, three: &Vec<usize>, nine: &Vec<usize>, twenty: &Vec<usize>, shift: usize) -> bool {
-    let sum = permutation[eight[eight.len() - shift]] 
-        + permutation[three[three.len() - shift]] 
-        + permutation[nine[nine.len() - shift]];
-    let digit = sum % 10;
-    return digit != permutation[twenty[twenty.len() - shift]];
+fn get_value(operand: &Vec<usize>, index: usize, permutation: &Vec<usize>) -> usize {
+    if index >= operand.len() {
+        return 0;
+    }
+
+    return permutation[operand[index]];
+}
+
+fn check_equality(operands: &Vec<Vec<usize>>, sum: &Vec<usize>, permutation: &Vec<usize>, index: usize, carry: usize) -> bool {
+    if index >= sum.len() {
+        return true;
+    }
+
+    let digits: Vec<usize> = operands.iter().map(|o| get_value(&o, index, permutation)).collect();
+
+    let column_sum: usize = digits.iter().sum();
+    let result = column_sum + carry;
+
+    if result % 10 == permutation[sum[index]] {
+        return check_equality(&operands, &sum, &permutation, index + 1, result / 10);
+    }
+    return false;
 }
 
 fn main() {
-    let eight: Vec<usize> = to_indices("eight");
-    let three: Vec<usize> = to_indices("three");
-    let nine: Vec<usize> = to_indices("nine");
-    let twenty: Vec<usize> = to_indices("twenty");
+    let operands = vec!["eight", "three", "nine"];
+    let sum = "twenty";
 
-    let mut numbers: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let mut numbers: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     let heap = Heap::new(&mut numbers);
 
-    for permutation in heap {
-        if has_short_circuit_inequality(&permutation, &eight, &three, &nine, &twenty, 1) {
-            continue;
-        }
+    let mut chars: Vec<char> = (operands.join("") + sum).chars().collect();
+    chars.sort();
+    chars.dedup();
 
-        if to_numeric(&eight, &permutation) + to_numeric(&three, &permutation) + to_numeric(&nine, &permutation) == to_numeric(&twenty, &permutation) {
-            println!("{:8}", to_numeric(&eight, &permutation));
-            println!("{:8}", to_numeric(&three, &permutation));
-            println!("{:8}", to_numeric(&nine, &permutation));
-            println!("--------");
-            println!("{:8}", to_numeric(&twenty, &permutation));
+    let indices: String = chars.into_iter().collect();
+
+    let rev_operands = operands.iter().map(|o| to_indices(o, &indices)).collect();
+    let rev_sum = to_indices(sum, &indices);
+
+    for permutation in heap {
+        if check_equality(&rev_operands, &rev_sum, &permutation, 0, 0) {
+            for operand in &operands {
+                println!("{:10}", to_numeric(operand, &indices, &permutation));
+            }
+            println!("----------");
+            println!("{:10}", to_numeric(sum, &indices, &permutation));
             println!("");
         }
     }
